@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>המרה ל-HTML</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --text:#1f2328; --line:#d0d7de; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --panel:#161b22; --text:#e6edf3; --line:#30363d; --accent:#58a6ff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  .wrap { max-width:1000px; margin:0 auto; display:grid; gap:12px; }
+  h1 { font-size:18px; margin:0; }
+  textarea { width:100%; height:240px; padding:12px; border:2px dashed var(--line); border-radius:8px; background:var(--panel); color:var(--text); font:14px/1.6 ui-monospace,Menlo,Consolas,monospace; direction:ltr; text-align:left; resize:vertical; }
+  textarea.drag { border-color:var(--accent); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button { font:inherit; font-size:14px; padding:8px 14px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:6px; cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .hint { font-size:13px; opacity:.7; }
+  #out { width:100%; height:240px; direction:ltr; text-align:left; border-style:solid; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>המרת טקסט / קובץ ל-HTML</h1>
+  <textarea id="in" placeholder="הדבק כאן טקסט Markdown, או גרור לכאן קובץ .md / .txt" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="open">בחר קובץ…</button>
+    <input id="file" type="file" accept=".md,.markdown,.txt,.html,text/*" hidden>
+    <span class="hint">או הדבק / גרור קובץ לתיבה</span>
+  </div>
+  <textarea id="out" readonly placeholder="כאן יופיע קוד ה-HTML"></textarea>
+  <div class="row">
+    <button id="copyCode" class="primary">העתק קוד HTML</button>
+    <button id="copyRich">העתק כטקסט מעוצב (ל-Word / מייל)</button>
+    <button id="dl">הורד .html</button>
+    <span id="msg" class="hint"></span>
+  </div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const inp = $('#in'), out = $('#out'), msg = $('#msg');
+const html = () => DOMPurify.sanitize(marked.parse(inp.value));
+const update = () => { out.value = inp.value.trim() ? html() : ''; };
+const say = t => { msg.textContent = t; setTimeout(() => msg.textContent = '', 1500); };
+
+inp.addEventListener('input', update);
+
+async function loadFile(f) { if (f) { inp.value = await f.text(); update(); } }
+$('#open').onclick = () => $('#file').click();
+$('#file').onchange = e => { loadFile(e.target.files[0]); e.target.value = ''; };
+inp.addEventListener('dragover', e => { e.preventDefault(); inp.classList.add('drag'); });
+inp.addEventListener('dragleave', () => inp.classList.remove('drag'));
+inp.addEventListener('drop', e => { e.preventDefault(); inp.classList.remove('drag'); loadFile(e.dataTransfer.files[0]); });
+
+$('#copyCode').onclick = async () => { await navigator.clipboard.writeText(out.value); say('הועתק ✓'); };
+$('#copyRich').onclick = async () => {
+  const h = out.value;
+  await navigator.clipboard.write([new ClipboardItem({
+    'text/html': new Blob([h], { type:'text/html' }),
+    'text/plain': new Blob([inp.value], { type:'text/plain' })
+  })]);
+  say('הועתק ✓');
+};
+$('#dl').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([`<!doctype html>\n<html>\n<head>\n<meta charset="utf-8">\n<title>Document</title>\n</head>\n<body>\n${out.value}\n</body>\n</html>\n`], { type:'text/html' }));
+  a.download = 'document.html'; a.click(); URL.revokeObjectURL(a.href);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown ל-HTML</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/lib/turndown.browser.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --text:#1f2328; --muted:#656d76; --line:#d0d7de; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --panel:#161b22; --text:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#58a6ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0 0 0 auto; margin-inline-end:auto; margin-inline-start:0; }
+  button, .tab { font:inherit; font-size:14px; padding:6px 12px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:6px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .tabs { display:flex; gap:0; }
+  .tab { border-radius:0; }
+  .tab:first-child { border-start-start-radius:6px; border-end-start-radius:6px; }
+  .tab:last-child { border-start-end-radius:6px; border-end-end-radius:6px; }
+  .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  #toolbar { display:none; gap:4px; flex-wrap:wrap; padding:6px 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+  #toolbar.show { display:flex; }
+  #toolbar button { padding:4px 9px; min-width:32px; }
+  main { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 16px; min-height:0; }
+  main.single { grid-template-columns:1fr; }
+  .pane { background:var(--panel); border:1px solid var(--line); border-radius:8px; display:flex; flex-direction:column; min-height:0; min-width:0; }
+  .pane > .label { font-size:12px; color:var(--muted); padding:6px 12px; border-bottom:1px solid var(--line); }
+  .pane > .body { flex:1; overflow:auto; padding:14px; min-height:0; }
+  textarea { width:100%; height:100%; border:0; outline:0; resize:none; background:transparent; color:var(--text); font:14px/1.6 ui-monospace, Menlo, Consolas, monospace; direction:ltr; text-align:left; }
+  #wysiwyg { outline:0; min-height:100%; }
+  #htmlOut { white-space:pre-wrap; word-break:break-all; margin:0; font:13px/1.55 ui-monospace, Menlo, Consolas, monospace; direction:ltr; text-align:left; }
+  .md :is(h1,h2,h3){ line-height:1.25; }
+  .md h1 { border-bottom:1px solid var(--line); padding-bottom:.3em; }
+  .md pre { background:var(--bg); padding:12px; border-radius:6px; overflow:auto; direction:ltr; text-align:left; }
+  .md code { background:var(--bg); padding:.15em .35em; border-radius:4px; font-size:.9em; }
+  .md pre code { background:none; padding:0; }
+  .md blockquote { margin-inline:0; padding-inline-start:1em; border-inline-start:4px solid var(--line); color:var(--muted); }
+  .md table { border-collapse:collapse; }
+  .md th, .md td { border:1px solid var(--line); padding:6px 12px; }
+  .md img { max-width:100%; }
+  .hidden { display:none !important; }
+  @media (max-width:760px) { main { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>המרת Markdown ל-HTML</h1>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-view="split">מפוצל</button>
+    <button class="tab" data-view="md">Markdown</button>
+    <button class="tab" data-view="wysiwyg">עורך ויזואלי</button>
+    <button class="tab" data-view="html">קוד HTML</button>
+  </div>
+  <button id="openBtn">פתח קובץ .md</button>
+  <button id="copyBtn">העתק HTML</button>
+  <button id="dlHtml">הורד .html</button>
+  <button id="dlMd">הורד .md</button>
+  <input id="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+</header>
+
+<div id="toolbar">
+  <button data-cmd="bold"><b>B</b></button>
+  <button data-cmd="italic"><i>I</i></button>
+  <button data-cmd="strikeThrough"><s>S</s></button>
+  <button data-block="h1">H1</button>
+  <button data-block="h2">H2</button>
+  <button data-block="h3">H3</button>
+  <button data-block="p">פסקה</button>
+  <button data-cmd="insertUnorderedList">• רשימה</button>
+  <button data-cmd="insertOrderedList">1. רשימה</button>
+  <button data-block="blockquote">ציטוט</button>
+  <button data-block="pre">קוד</button>
+  <button id="linkBtn">קישור</button>
+  <button data-cmd="insertHorizontalRule">―</button>
+  <button data-cmd="removeFormat">נקה עיצוב</button>
+</div>
+
+<main id="main">
+  <section class="pane" id="mdPane">
+    <div class="label">Markdown</div>
+    <div class="body"><textarea id="md" spellcheck="false"></textarea></div>
+  </section>
+  <section class="pane" id="wyPane">
+    <div class="label">תצוגה ויזואלית (ניתן לעריכה)</div>
+    <div class="body"><div id="wysiwyg" class="md" contenteditable="true"></div></div>
+  </section>
+  <section class="pane hidden" id="htmlPane">
+    <div class="label">קוד HTML</div>
+    <div class="body"><pre id="htmlOut"></pre></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const mdEl = $('#md'), wy = $('#wysiwyg'), htmlOut = $('#htmlOut');
+const td = new TurndownService({ headingStyle:'atx', codeBlockStyle:'fenced', bulletListMarker:'-' });
+// strikethrough support (GFM)
+td.addRule('strike', { filter:['del','s','strike'], replacement: c => '~~' + c + '~~' });
+marked.setOptions({ gfm:true, breaks:false });
+
+const SAMPLE = `# שלום עולם
+
+זה **טקסט מודגש**, זה *נטוי*, וזה \`קוד\`.
+
+- פריט ראשון
+- פריט שני
+
+> ציטוט לדוגמה
+
+\`\`\`js
+console.log("hello");
+\`\`\`
+
+| עמודה א | עמודה ב |
+|---|---|
+| 1 | 2 |
+`;
+
+const render = () => DOMPurify.sanitize(marked.parse(mdEl.value));
+
+function fromMd() {
+  const html = render();
+  if (document.activeElement !== wy) wy.innerHTML = html;
+  htmlOut.textContent = html;
+  save();
+}
+function fromWysiwyg() {
+  mdEl.value = td.turndown(wy.innerHTML);
+  htmlOut.textContent = render();
+  save();
+}
+function save() { try { localStorage.setItem('md2html', mdEl.value); } catch (e) {} }
+
+mdEl.addEventListener('input', fromMd);
+wy.addEventListener('input', fromWysiwyg);
+
+// views
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  const v = t.dataset.view, main = $('#main');
+  main.classList.toggle('single', v !== 'split');
+  $('#mdPane').classList.toggle('hidden', !(v === 'split' || v === 'md'));
+  $('#wyPane').classList.toggle('hidden', !(v === 'split' || v === 'wysiwyg'));
+  $('#htmlPane').classList.toggle('hidden', v !== 'html');
+  $('#toolbar').classList.toggle('show', v === 'split' || v === 'wysiwyg');
+}));
+$('#toolbar').classList.add('show');
+
+// toolbar
+$('#toolbar').addEventListener('mousedown', e => e.preventDefault()); // keep selection
+$('#toolbar').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  wy.focus();
+  if (b.dataset.cmd) document.execCommand(b.dataset.cmd);
+  else if (b.dataset.block) document.execCommand('formatBlock', false, b.dataset.block);
+  else if (b.id === 'linkBtn') { const u = prompt('כתובת הקישור:'); if (u) document.execCommand('createLink', false, u); }
+  fromWysiwyg();
+});
+
+// files
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+$('#openBtn').onclick = () => $('#file').click();
+$('#file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  mdEl.value = await f.text(); fromMd(); e.target.value = '';
+};
+$('#copyBtn').onclick = async () => {
+  await navigator.clipboard.writeText(render());
+  $('#copyBtn').textContent = 'הועתק ✓'; setTimeout(() => $('#copyBtn').textContent = 'העתק HTML', 1200);
+};
+$('#dlHtml').onclick = () => download('document.html',
+  `<!doctype html>\n<html>\n<head>\n<meta charset="utf-8">\n<title>Document</title>\n</head>\n<body>\n${render()}\n</body>\n</html>\n`, 'text/html');
+$('#dlMd').onclick = () => download('document.md', mdEl.value, 'text/markdown');
+
+// init
+try { mdEl.value = localStorage.getItem('md2html') || SAMPLE; } catch (e) { mdEl.value = SAMPLE; }
+fromMd();
+</script>
+</body>
+</html>
