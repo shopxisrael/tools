@@ -45,6 +45,8 @@
   .md img { max-width:100%; }
   .hidden { display:none !important; }
   @media (max-width:760px) { main { grid-template-columns:1fr; } }
+  .legal { font-size:12px; opacity:.7; text-align:center; padding:8px 16px; border-top:1px solid var(--line); }
+  .legal div { margin:2px 0; }
 </style>
 </head>
 <body>
@@ -94,6 +96,11 @@
     <div class="body"><pre id="htmlOut"></pre></div>
   </section>
 </main>
+
+<footer class="legal">
+  <div>© SHOP. כל הזכויות שמורות. הקוד הוא בבעלות פרטית של חברת SHOP. חל איסור מוחלט לעשות בו כל שימוש.</div>
+  <div dir="ltr">© SHOP. All rights reserved. This code is the private property of SHOP. Any use is strictly prohibited.</div>
+</footer>
 
 <script>
 const $ = s => document.querySelector(s);

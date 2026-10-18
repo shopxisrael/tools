@@ -20,6 +20,8 @@
   button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
   .hint { font-size:13px; opacity:.7; }
   #out { width:100%; height:240px; direction:ltr; text-align:left; border-style:solid; }
+  .legal { font-size:12px; opacity:.7; text-align:center; padding:8px 16px; border-top:1px solid var(--line); }
+  .legal div { margin:2px 0; }
 </style>
 </head>
 <body>
@@ -39,6 +41,10 @@
     <span id="msg" class="hint"></span>
   </div>
 </div>
+<footer class="legal">
+  <div>© SHOP. כל הזכויות שמורות. הקוד הוא בבעלות פרטית של חברת SHOP. חל איסור מוחלט לעשות בו כל שימוש.</div>
+  <div dir="ltr">© SHOP. All rights reserved. This code is the private property of SHOP. Any use is strictly prohibited.</div>
+</footer>
 <script>
 const $ = s => document.querySelector(s);
 const inp = $('#in'), out = $('#out'), msg = $('#msg');
